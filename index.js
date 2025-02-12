@@ -11,10 +11,16 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy - Add this before other middleware
+app.set("trust proxy", 1);
+
 // CORS configuration
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://quotiss.vercel.app"],
+    origin: [
+      "http://localhost:3000",
+      "https://xtrack-frontend.vercel.app", // Add your frontend domain
+    ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -27,13 +33,27 @@ app.use(express.json());
 // Security middleware
 app.use(helmet());
 
-// Rate limiting
+// Rate limiter configuration
 const limiter = rateLimit({
-  max: 100, // limit each IP to 100 requests per windowMs
-  windowMs: 60 * 60 * 1000, // 1 hour
-  message: "Too many requests from this IP, please try again in an hour",
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Add trusted proxy configuration
+  trustProxy: true,
 });
-app.use("/api", limiter);
+
+app.use(limiter);
+
+// Add this before your routes
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Xtrack API is running",
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+  });
+});
 
 app.use("/api/users", userRoutes);
 app.use("/api/charges", chargesRoutes);
