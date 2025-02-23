@@ -7,6 +7,7 @@ const router = express.Router();
 // router.use(authController.restrictTo("Admin"));
 // router.post("/login", authController.login);
 // router.post("/signup", authController.signup);
+router.patch("/extend-validity", authController.updateUserValidDate);
 router.get("/logout", authController.logout);
 router.post("/signup-request", authController.handleSignup);
 router.post("/login", authController.login);

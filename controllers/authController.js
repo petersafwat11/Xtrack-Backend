@@ -98,13 +98,14 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 });
 
-
 exports.logout = (req, res) => {
-  res.cookie("jwt", "loggedout", {
+  // Clear JWT cookie
+  res.cookie('jwt', 'loggedout', {
     expires: new Date(Date.now() + 10 * 1000),
-    httpOnly: true,
+    httpOnly: true
   });
-  res.status(200).json({ status: "success" });
+
+  res.status(200).json({ status: 'success' });
 };
 
 exports.handleSignup = catchAsync(async (req, res, next) => {
@@ -182,17 +183,17 @@ exports.createTestUser = catchAsync(async (req, res, next) => {
   const testUser = {
     company: "JGLS", // Max 10 chars
     entity_code: "JGL", // Max 10 chars
-    user_id: "safwat", // Max 20 chars
-    user_pwd: "Test@123", // Max 100 chars
-    user_name: "safwat", // Max 50 chars
+    user_id: "petersafwat", // Max 20 chars
+    user_pwd: "password1234", // Max 100 chars
+    user_name: "peter safwat", // Max 50 chars
     user_company: "JGLS", // Max 50 chars
     user_location: "SG", // Max 20 chars
     user_avatar: null,
     user_active: "Y", // Single char
-    user_valid_date: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    user_valid_date: new Date(Date.now() + 24 *10 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0], // Date format
-    user_email: "safwat@jgls.com", // Max 50 chars
+    user_email: "petersafwat@jgls.com", // Max 50 chars
     create_user: "SYSTEM", // Max 20 chars
     create_date: currentDate, // Date format
     update_user: "SYSTEM", // Max 20 chars
@@ -207,6 +208,36 @@ exports.createTestUser = catchAsync(async (req, res, next) => {
     data: {
       user_id: testUser.user_id,
       password: "Test@123", // Only for testing!
+    },
+  });
+});
+exports.updateUserValidDate = catchAsync(async (req, res, next) => {
+  const userId = "petersafwat";
+  const newValidDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // A week from now
+    .toISOString()
+    .split("T")[0];
+
+  const updatedRows = await knex("dba.xtrack_access")
+    .where({ user_id: userId })
+    .update({
+      user_valid_date: newValidDate,
+      update_user: "SYSTEM",
+      update_date: new Date().toISOString().split("T")[0],
+    });
+
+  if (updatedRows === 0) {
+    return res.status(404).json({
+      status: "fail",
+      message: "User not found",
+    });
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "User valid date updated successfully",
+    data: {
+      user_id: userId,
+      user_valid_date: newValidDate,
     },
   });
 });

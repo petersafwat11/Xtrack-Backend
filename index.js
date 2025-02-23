@@ -5,6 +5,8 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const userRoutes = require("./routes/usersRoutes");
 const chargesRoutes = require("./routes/chargesRoutes");
+const feedbackRoutes = require("./routes/feedbackRoutes");
+const trackingRoutes = require("./routes/trackingRoutes");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 dotenv.config();
@@ -14,24 +16,30 @@ const app = express();
 // Trust proxy - Add this before other middleware
 app.set("trust proxy", 1);
 
+// Enable pre-flight requests for all routes
+app.options("*", cors());
+
 // CORS configuration
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "https://xtrack-frontend.vercel.app", // Add your frontend domain
-    ],
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    origin: ["http://localhost:3000", "https://xtrack-frontend.vercel.app"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+    // credentials: true,
+    optionsSuccessStatus: 200,
   })
 );
 
 // Middleware to parse JSON requests
 app.use(express.json());
 
-// Security middleware
-app.use(helmet());
+// Security middleware with adjusted settings
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  })
+);
 
 // Rate limiter configuration
 const limiter = rateLimit({
@@ -57,6 +65,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/users", userRoutes);
 app.use("/api/charges", chargesRoutes);
+app.use("/api/feedback", feedbackRoutes);
+app.use("/api/tracking", trackingRoutes);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
