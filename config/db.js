@@ -10,21 +10,21 @@ const knex = require("knex")({
     database: process.env.DB_NAME,
     port: process.env.DB_PORT,
     ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-    connectionTimeoutMillis: 10000, // 10 seconds
-    query_timeout: 10000, // 10 seconds
-    statement_timeout: 10000, // 10 seconds
-    idle_in_transaction_session_timeout: 10000 // 10 seconds
+    // connectionTimeoutMillis: 10000, // 10 seconds
+    // query_timeout: 10000, // 10 seconds
+    // statement_timeout: 10000, // 10 seconds
+    // idle_in_transaction_session_timeout: 10000 // 10 seconds
   },
   pool: {
     min: 2,
     max: 10,
-    acquireTimeoutMillis: 30000, // 30 seconds
-    createTimeoutMillis: 30000,  // 30 seconds
-    idleTimeoutMillis: 30000,    // 30 seconds
-    reapIntervalMillis: 1000,    // Check for idle clients every 1 second
-    createRetryIntervalMillis: 200, // Time between retries
+    // acquireTimeoutMillis: 30000, // 30 seconds
+    // createTimeoutMillis: 30000,  // 30 seconds
+    // idleTimeoutMillis: 30000,    // 30 seconds
+    // reapIntervalMillis: 1000,    // Check for idle clients every 1 second
+    // createRetryIntervalMillis: 200, // Time between retries
   },
-  acquireConnectionTimeout: 60000, // 60 seconds
+  // acquireConnectionTimeout: 60000, // 60 seconds
 });
 
 // Add event listeners for connection issues
@@ -85,27 +85,4 @@ knex
     console.error("Database connection failed:", err);
   });
 
-// Function to get and log all records from xtrack_log
-const getLogRecords = async () => {
-  try {
-
-    const columns = await knex
-    .select("*")
-    .from("dba.xtrack_log")
-
-    console.log("\nTable Columns:");
-    console.log("----------------");
-    console.log(columns);
-    // columns.forEach((column) => {
-    //   console.log(`- ${column.column_name} (${column.data_type})`);
-    // });
-  } catch (error) {
-    console.error("Error retrieving table columns:", error);
-  }
-};
-// // Call the function
-
-// Execute the function
-// listTables();
-// getLogRecords();
 module.exports = knex;
