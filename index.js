@@ -7,6 +7,7 @@ const userRoutes = require("./routes/usersRoutes");
 const chargesRoutes = require("./routes/chargesRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const trackingRoutes = require("./routes/trackingRoutes");
+const endpointRoutes = require("./routes/endpointRoutes");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 dotenv.config();
@@ -67,6 +68,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/charges", chargesRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/tracking", trackingRoutes);
+app.use("/api/endpoints", endpointRoutes);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

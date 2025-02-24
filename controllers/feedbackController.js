@@ -40,7 +40,7 @@ exports.submitFeedback = catchAsync(async (req, res, next) => {
                 address: 'contact@trackww.com'
             },
             to: 'contact@trackww.com',
-            subject: feedback_subject || 'New Feedback Submission',
+            subject: feedback_subject ,
             html: `
                 <p><strong>Submit by:</strong> ${user_id}</p>
                 <p><strong>Date:</strong> ${feedback_date}</p>

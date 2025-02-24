@@ -39,36 +39,35 @@ exports.login = catchAsync(async (req, res, next) => {
   const { user_id, user_pwd } = req.body;
   const currentDate = new Date();
 
-  // Get client IP and attempt to get location from headers
+  // Get client IP and location
   const ip_config = req.ip || req.connection.remoteAddress;
   const ip_location = req.headers["x-forwarded-for"] || ip_config;
 
   try {
-    // 1. Check if user exists and get user data
-    const user = await knex("dba.xtrack_access").where({ user_id }).first();
+    // 1. Fetch user from xtrack_users table
+    const user = await knex("dba.XTRACK_users").where({ user_id }).first();
 
     if (!user) {
-      throw new AppError("Invalid credentials", 401);
+      throw new AppError("Invalid User/Password", 401);
     }
 
-    // 2. Check if user is active
-    if (user.user_active !== "Y") {
-      throw new AppError("Inactive user", 401);
-    }
-
-    // 3. Check validity date
-    if (user.user_valid_date && new Date(user.user_valid_date) < currentDate) {
-      throw new AppError("User validity expired", 401);
-    }
-
-    // 4. Check password
-    // const passwordMatch = await bcrypt.compare(user_pwd, user.user_pwd);
-    const passwordMatch = user_pwd === user.user_pwd;
+    // 2. Check if password matches
+    const passwordMatch = user_pwd === user.user_pwd; // Replace with bcrypt if hashed
     if (!passwordMatch) {
-      throw new AppError("Invalid email or password", 401);
+      throw new AppError("Invalid User/Password", 401);
     }
 
-    // 5. If all checks pass, log successful login
+    // 3. Check if user is active
+    if (user.user_active !== "Y") {
+      throw new AppError("Inactive User", 401);
+    }
+
+    // 4. Check validity date
+    if (user.valid_till && new Date(user.valid_till) < currentDate) {
+      throw new AppError("User Login Expired", 401);
+    }
+
+    // 5. Log successful login
     await knex("dba.xtrack_log").insert({
       user_id,
       api_date: new Date(),
@@ -78,21 +77,30 @@ exports.login = catchAsync(async (req, res, next) => {
       ip_location,
     });
 
-    // 6. Generate JWT token and send response
+    // 6. Generate JWT token
     const token = signToken(user.user_id);
 
+    // 7. Determine menu visibility
+    const menuPermissions = {
+      showSettingsUsers: user.admin_user === "Y",
+      showSettingsAPI: user.admin_user === "Y",
+    };
+
+    // 8. Send response
     res.status(200).json({
       status: "success",
       token,
       data: {
         user: {
           user_id: user.user_id,
+          user_name: user.user_name, // Show username at top-right
           company: user.company,
           entity_code: user.entity_code,
-          // Add other user data you want to send to frontend
+          menuPermissions, // Handle menu visibility in frontend
         },
       },
     });
+
   } catch (error) {
     next(error);
   }
