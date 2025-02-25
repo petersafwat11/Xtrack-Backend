@@ -35,11 +35,13 @@ const createSendToken = (user, statusCode, res) => {
   });
 };
 
+const axios = require("axios");
+
 exports.login = catchAsync(async (req, res, next) => {
   const { user_id, user_pwd } = req.body;
   const currentDate = new Date();
 
-  // Get client IP and location
+  // Get client IP
   const ip_config = req.ip || req.connection.remoteAddress;
   const ip_location = req.headers["x-forwarded-for"] || ip_config;
 
@@ -67,26 +69,36 @@ exports.login = catchAsync(async (req, res, next) => {
       throw new AppError("User Login Expired", 401);
     }
 
-    // 5. Log successful login
+    // 5. Get Country from IP
+    let country = "Unknown";
+    try {
+      const response = await axios.get(`http://ip-api.com/json/${ip_location}`);
+      country = response.data.country || "Unknown";
+    } catch (err) {
+      console.error("Failed to fetch IP location:", err.message);
+    }
+
+    // 6. Log successful login
     await knex("dba.xtrack_log").insert({
       user_id,
       api_date: new Date(),
       api_request: "login",
       api_status: "S",
       ip_config,
-      ip_location,
+      ip_location:country ,
+       // Save country in logs
     });
 
-    // 6. Generate JWT token
+    // 7. Generate JWT token
     const token = signToken(user.user_id);
 
-    // 7. Determine menu visibility
+    // 8. Determine menu visibility
     const menuPermissions = {
       showSettingsUsers: user.admin_user === "Y",
       showSettingsAPI: user.admin_user === "Y",
     };
 
-    // 8. Send response
+    // 9. Send response
     res.status(200).json({
       status: "success",
       token,
@@ -97,6 +109,7 @@ exports.login = catchAsync(async (req, res, next) => {
           company: user.company,
           entity_code: user.entity_code,
           menuPermissions, // Handle menu visibility in frontend
+          country, // Send country to frontend
         },
       },
     });
@@ -105,7 +118,6 @@ exports.login = catchAsync(async (req, res, next) => {
     next(error);
   }
 });
-
 exports.logout = (req, res) => {
   // Clear JWT cookie
   res.cookie('jwt', 'loggedout', {

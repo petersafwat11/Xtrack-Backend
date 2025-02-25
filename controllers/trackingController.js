@@ -53,6 +53,7 @@ exports.getLogRecords = catchAsync(async (req, res, next) => {
             // Get total count for pagination
             const countQuery = trx("dba.xtrack_log")
                 .count('* as count')
+                .whereNotIn("api_request", ["login", "logout"]) // Exclude login/logout
                 .timeout(5000); // 5 second timeout
             
             // Apply filters to count query
@@ -79,6 +80,7 @@ exports.getLogRecords = catchAsync(async (req, res, next) => {
             // Build data query
             const dataQuery = trx("dba.xtrack_log")
                 .select("*")
+                .whereNotIn("api_request", ["login", "logout"]) // Exclude login/logout
                 .orderBy("api_date", "desc")
                 .timeout(5000); // 5 second timeout
 
