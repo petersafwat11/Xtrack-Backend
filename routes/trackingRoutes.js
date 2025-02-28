@@ -3,7 +3,6 @@ const router = express.Router();
 const trackingController = require('../controllers/trackingController');
 
 router.route('/').post(trackingController.logTracking).get(trackingController.getLogRecords);
-// .get(trackingController.getLogRecords)
-;
+router.route('/:trackingNumber').get(trackingController.getTrackingData);
 
 module.exports = router;
