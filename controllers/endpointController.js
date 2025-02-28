@@ -57,3 +57,18 @@ exports.updateEndpoint = catchAsync(async (req, res, next) => {
         data: result[0]
     });
 });
+exports.getEndpoint=catchAsync(
+    async (req, res, next) => {
+        const { id } = req.params;
+        console.log(id)
+        console.log("iddddddddddddddddddd")
+        const endpoint = await knex('dba.xtrack_endpoint').where({ menu_id: id }).first();
+        if (!endpoint) {
+            return next(new AppError('No endpoint found with that ID', 404));
+        }
+        res.status(200).json({
+            status: 'success',
+            data: endpoint
+        });
+    }
+)
