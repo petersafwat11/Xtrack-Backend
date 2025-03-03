@@ -141,24 +141,16 @@ exports.handleSignup = catchAsync(async (req, res, next) => {
     phone,
   });
 
-  // 2. Get SMTP configuration
-  const smtpConfig = await knex("dba.smtp_config")
-    .select("*")
-    .where({ company: "JGLS" })
-    .first();
-
-  if (!smtpConfig || !smtpConfig.signup_email) {
-    throw new AppError("SMTP configuration not found", 500);
-  }
-
-  // 3. Configure email transporter
   const transporter = nodemailer.createTransport({
-    host: smtpConfig.smtp_server,
-    port: smtpConfig.smtp_port,
-    secure: smtpConfig.smtp_port === 465,
+    host: process.env.smtp_server,
+    port: process.env.smtp_port,
+    secure: true,
     auth: {
-      user: smtpConfig.smtp_username,
-      pass: smtpConfig.smtp_password,
+      user: process.env.smtp_username,
+      pass: process.env.smtp_password,
+    },
+    tls: {
+      rejectUnauthorized: false,
     },
   });
 
@@ -180,8 +172,9 @@ exports.handleSignup = catchAsync(async (req, res, next) => {
 
   // 5. Send email
   await transporter.sendMail({
-    from: `"${smtpConfig.smtp_sendername}" <${smtpConfig.smtp_sender}>`,
-    to: smtpConfig.signup_email,
+    from: '"Xtrack Signup" <contact@trackww.com>',
+    replyTo: email,
+    to: "contact@trackww.com",
     subject: "Xtrack Signup Request",
     text: emailBody,
     html: emailBody.replace(/\n/g, "<br>"),
