@@ -309,3 +309,213 @@ exports.getTrackingData = async (req, res) => {
         return res.status(500).json({ error: 'Internal Server Error' });
     }    
 };
+
+// Get totals for dashboard (monthly and yearly)
+exports.getTotals = catchAsync(async (req, res, next) => {
+    try {
+        const user_id = req.query.user_id;
+        
+        if (!user_id) {
+            return next(new AppError('User ID is required', 400));
+        }
+
+        // Get current month and year
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
+        const currentYear = now.getFullYear();
+        
+        // Get monthly total
+        const monthlyQuery = await knex("dba.xtrack_log")
+            .count('* as count')
+            .where('user_id', user_id)
+            .whereRaw('EXTRACT(MONTH FROM api_date) = ?', [currentMonth])
+            .whereRaw('EXTRACT(YEAR FROM api_date) = ?', [currentYear])
+            .first();
+            
+        // Get yearly total
+        const yearlyQuery = await knex("dba.xtrack_log")
+            .count('* as count')
+            .where('user_id', user_id)
+            .whereRaw('EXTRACT(YEAR FROM api_date) = ?', [currentYear])
+            .first();
+            
+        res.status(200).json({
+            status: "success",
+            monthlyTotal: parseInt(monthlyQuery.count) || 0,
+            yearlyTotal: parseInt(yearlyQuery.count) || 0
+        });
+    } catch (error) {
+        console.error('Error in getTotals:', error);
+        next(new AppError(error.message || 'Failed to fetch totals', 500));
+    }
+});
+
+// Get chart data for dashboard
+exports.getChartData = catchAsync(async (req, res, next) => {
+    try {
+        const user_id = req.query.user_id;
+        const year = parseInt(req.query.year) || new Date().getFullYear();
+        
+        if (!user_id) {
+            return next(new AppError('User ID is required', 400));
+        }
+
+        // Get weekly usage data (last 7 days)
+        const weeklyUsageData = await knex.raw(`
+            WITH DateSeries AS (
+                SELECT generate_series(
+                    CURRENT_DATE - INTERVAL '6 days',
+                    CURRENT_DATE,
+                    INTERVAL '1 day'
+                )::date as date
+            )
+            SELECT 
+                TO_CHAR(d.date, 'MM-DD') as day,
+                COUNT(l.log_id) as count
+            FROM 
+                DateSeries d
+            LEFT JOIN 
+                dba.xtrack_log l ON DATE(l.api_date) = d.date AND l.user_id = ?
+            GROUP BY 
+                d.date
+            ORDER BY 
+                d.date
+        `, [user_id]);
+
+        // Format weekly usage data
+        const weeklyUsage = weeklyUsageData.rows.map(row => ({
+            day: row.day,
+            count: parseInt(row.count)
+        }));
+
+        // Get track ratio data (Ocean, Air, Schedule, Vessel)
+        const trackRatioQuery = await knex.raw(`
+            WITH CategoryCounts AS (
+                SELECT 
+                    CASE 
+                        WHEN api_request LIKE '%Ocean%' THEN 'Ocean'
+                        WHEN api_request LIKE '%Air%' THEN 'Air'
+                        WHEN api_request LIKE '%Schedule%' THEN 'Schedule'
+                        WHEN api_request IN ('Marine Traffic', 'Vessel Tracker') THEN 'Vessel'
+                        ELSE 'Other'
+                    END as category,
+                    COUNT(*) as count
+                FROM 
+                    dba.xtrack_log
+                WHERE 
+                    user_id = ?
+                    AND EXTRACT(YEAR FROM api_date) = ?
+                GROUP BY 
+                    CASE 
+                        WHEN api_request LIKE '%Ocean%' THEN 'Ocean'
+                        WHEN api_request LIKE '%Air%' THEN 'Air'
+                        WHEN api_request LIKE '%Schedule%' THEN 'Schedule'
+                        WHEN api_request IN ('Marine Traffic', 'Vessel Tracker') THEN 'Vessel'
+                        ELSE 'Other'
+                    END
+            )
+            SELECT category, count 
+            FROM CategoryCounts 
+            WHERE count > 0
+            ORDER BY count DESC
+        `, [user_id, year]);
+
+        // Format track ratio data
+        const trackRatio = trackRatioQuery.rows.map(row => ({
+            name: row.category,
+            value: parseInt(row.count)
+        }));
+
+        // Get success ratio data
+        const successRatioQuery = await knex.raw(`
+            WITH StatusCounts AS (
+                SELECT 
+                    CASE 
+                        WHEN api_status = 'S' THEN 'Success'
+                        ELSE 'Failure'
+                    END as status,
+                    COUNT(*) as count
+                FROM 
+                    dba.xtrack_log
+                WHERE 
+                    user_id = ?
+                    AND EXTRACT(YEAR FROM api_date) = ?
+                GROUP BY 
+                    CASE 
+                        WHEN api_status = 'S' THEN 'Success'
+                        ELSE 'Failure'
+                    END
+            )
+            SELECT status, count 
+            FROM StatusCounts 
+            WHERE count > 0
+            ORDER BY status
+        `, [user_id, year]);
+
+        // Format success ratio data
+        const successRatio = successRatioQuery.rows.map(row => ({
+            name: row.status,
+            value: parseInt(row.count)
+        }));
+
+        res.status(200).json({
+            status: "success",
+            weeklyUsage,
+            trackRatio,
+            successRatio
+        });
+    } catch (error) {
+        console.error('Error in getChartData:', error);
+        next(new AppError(error.message || 'Failed to fetch chart data', 500));
+    }
+});
+
+// Get recent tracks for dashboard
+exports.getRecentTracks = catchAsync(async (req, res, next) => {
+    try {
+        const user_id = req.query.user_id;
+        const limit = parseInt(req.query.limit) || 20;
+        
+        if (!user_id) {
+            return next(new AppError('User ID is required', 400));
+        }
+
+        // Get recent tracks
+        const recentTracksQuery = await knex("dba.xtrack_log")
+            .select(
+                "log_id",
+                "user_id",
+                "api_date",
+                "api_request",
+                "api_status",
+                "api_error",
+                "ip_config",
+                "ip_location",
+                "menu_id"
+            )
+            .where('user_id', user_id)
+            .orderBy('api_date', 'desc')
+            .limit(limit);
+            
+        // Format data for frontend
+        const data = recentTracksQuery.map(track => ({
+            id: track.log_id,
+            userId: track.user_id,
+            date: track.api_date,
+            request: track.api_request,
+            status: track.api_status,
+            error: track.api_error,
+            ipConfig: track.ip_config,
+            ipLocation: track.ip_location,
+            menuId: track.menu_id
+        }));
+        
+        res.status(200).json({
+            status: "success",
+            data
+        });
+    } catch (error) {
+        console.error('Error in getRecentTracks:', error);
+        next(new AppError(error.message || 'Failed to fetch recent tracks', 500));
+    }
+});
