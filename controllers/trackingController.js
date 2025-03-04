@@ -359,6 +359,7 @@ exports.getDashboardData = async (req, res) => {
     const dataGridPromise = knex('dba.xtrack_log')
       .where('user_id', user_id)
       .orderBy('api_date', 'desc')
+      .whereNotIn("api_request", ["login", "logout"]) // Exclude login/logout
       .limit(20);
 
     // 5. Success Ratio: count successes and failures (filter by provided year)
