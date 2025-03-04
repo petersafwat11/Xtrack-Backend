@@ -13,9 +13,9 @@ router.get("/export", trackingController.exportLogsToExcel);
 
 // Dashboard routes
 router.get("/totals", trackingController.getTotals);
-router.get("/charts", trackingController.getChartData);
-router.get("/recent", trackingController.getRecentTracks);
-
+// router.get("/charts", trackingController.getChartData);
+// router.get("/recent", trackingController.getRecentTracks);
+router.get("/dashboard", trackingController.getDashboardData);
 router.get("/:trackingNumber", trackingController.getTrackingData);
 
 module.exports = router;
