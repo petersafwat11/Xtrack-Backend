@@ -72,7 +72,66 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
   }
 });
 
-exports.createUser = handlers.createOne("dba.XTRACK_users");
+exports.createUser = catchAsync(async (req, res, next) => {
+  try {
+    const userData = { ...req.body };
+    
+    // Insert the user into the database
+    const created = await knex("dba.XTRACK_users").insert(userData).returning("*");
+    
+    // Send welcome email to the user
+    const nodemailer = require("nodemailer");
+    
+    // Create email transporter using environment variables
+    const transporter = nodemailer.createTransport({
+      host: process.env.smtp_server,
+      port: process.env.smtp_port,
+      secure: true,
+      auth: {
+        user: process.env.smtp_username,
+        pass: process.env.smtp_password,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+    
+    // Format email body
+    const emailBody = `
+      Hi ${userData.user_name},
+      
+      Welcome to TrackWW. Below the login credentials.
+      Login Id - ${userData.user_id}
+      Password - ${userData.user_pwd}
+      
+      Thank You, Happy Tracking
+      TrackWW Support
+      
+      Kindly reach to us for any queries contact@trackww.com
+    `;
+    
+    // Send email
+    await transporter.sendMail({
+      from: '"TrackWW Support" <contact@trackww.com>',
+      to: userData.user_email,
+      subject: "User Created in TrackWW",
+      text: emailBody,
+      html: emailBody.replace(/\n/g, "<br>"),
+    });
+    
+    // Return success response
+    res.status(201).json({
+      status: "success",
+      data: {
+        data: created[0],
+      },
+      message: "User created successfully and welcome email sent"
+    });
+  } catch (error) {
+    console.error("Error creating user:", error);
+    next(new AppError(error.message || "Failed to create user", 500));
+  }
+});
 
 exports.getUser = catchAsync(async (req, res, next) => {
   const { id } = req.params;

@@ -83,29 +83,6 @@ knex
   .catch((err) => {
     console.error("Database connection failed:", err);
   });
-  // const renameUsersTable = async () => {
-  //   try {
-  //     const exists = await knex.schema.withSchema('dba').hasTable('users');
-  //     if (exists) {
-  //       await knex.schema.withSchema('dba').renameTable('users', 'XTRACK_users');
-  //       console.log('Renamed table dba.users to dba.XTRACK_users');
-  //     } else {
-  //       console.log('Table dba.users does not exist');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error renaming table dba.users:', error);
-  //   }
-  // };
-  
-  // Call the function
-  // renameUsersTable();
-    // Call the function
-  // createUsersTable();
-    // Call the function to modify the table
-  // addPrimaryKeyToEndpointTable();
-    
-  // Test connection and list tables
-  // createEndpointTable();
   
 module.exports = knex;
  
