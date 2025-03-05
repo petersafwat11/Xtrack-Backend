@@ -351,6 +351,7 @@ exports.getDashboardData = async (req, res) => {
     const last7DaysQuery = knex('dba.xtrack_log')
       .select(knex.raw("TO_CHAR(api_date, 'Dy') as day"), knex.raw('COUNT(log_id) as count'))
       .where('user_id', user_id)
+      .whereNotIn("api_request", ["login", "logout"]) // Exclude login/logout
       .andWhere('api_date', '>=', sevenDaysAgo)
       .groupByRaw("TO_CHAR(api_date, 'Dy')")
       .orderByRaw("MIN(api_date)");
@@ -367,6 +368,7 @@ exports.getDashboardData = async (req, res) => {
       .select('api_status')
       .count('log_id as count')
       .where('user_id', user_id)
+      .whereNotIn("api_request", ["login", "logout"]) // Exclude login/logout
       .andWhereRaw('EXTRACT(YEAR FROM api_date) = ?', [targetYear])
       .groupBy('api_status');
 
