@@ -7,8 +7,6 @@ const bcrypt = require("bcryptjs");
 
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   try {
-    console.log('Query params:', req.query);
-
     // Get pagination parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -179,46 +177,8 @@ exports.updateUser = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.updatePassword = catchAsync(async (req, res, next) => {
-  const { user_email, user_pwd } = req.body;
-
-  // Validate input
-  if (!user_email || !user_pwd) {
-    return next(new AppError('Email and password are required.', 400));
-  }
-
-  try {
-    // Check if user exists
-    const user = await knex('dba.qru_access').where({ user_email }).first();
-
-    if (!user) {
-      return next(new AppError('User not found.', 404));
-    }
-
-    // Hash the new password
-    const hashedPassword = await bcrypt.hash(user_pwd, 12);
-
-    // Update the password
-    await knex('dba.qru_access')
-      .where({ user_email })
-      .update({ 
-        user_pwd: hashedPassword,
-        update_date: new Date().toISOString()
-      });
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Password updated successfully.'
-    });
-  } catch (error) {
-    return next(new AppError('Error updating password', 500));
-  }
-});
-
 exports.deleteUser = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-console.log('id')
-console.log(id)
   // Check if the user exists
   const user = await knex("dba.XTRACK_users").where({ user_id: id }).first();
   if (!user) {

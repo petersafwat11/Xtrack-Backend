@@ -78,7 +78,7 @@ knex
   .raw("SELECT 1")
   .then(async () => {
     console.log("Connected to the database successfully");
-    await listTables();
+    // await listTables();
   })
   .catch((err) => {
     console.error("Database connection failed:", err);

@@ -20,13 +20,13 @@ exports.submitFeedback = catchAsync(async (req, res, next) => {
 
         // 2. Create email transporter with hardcoded SMTP config
         const transporter = nodemailer.createTransport({
-            host: 'smtpout.secureserver.net',
-            port: 465,
+            host: process.env.smtp_server,
+            port: process.env.smtp_port,
             secure: true,
             auth: {
-                user: 'contact@trackww.com',
-                pass: 'DollarTree99*'
-            },
+                user: process.env.smtp_username,
+                pass: process.env.smtp_password,
+                  },
             tls: {
                 // Do not fail on invalid certs
                 rejectUnauthorized: false

@@ -54,7 +54,7 @@ exports.login = catchAsync(async (req, res, next) => {
     }
 
     // 2. Check if password matches
-    const passwordMatch = user_pwd === user.user_pwd; // Replace with bcrypt if hashed
+    const passwordMatch = user_pwd === user.user_pwd; 
     if (!passwordMatch) {
       throw new AppError("Invalid User/Password", 401);
     }
@@ -105,11 +105,11 @@ exports.login = catchAsync(async (req, res, next) => {
       data: {
         user: {
           user_id: user.user_id,
-          user_name: user.user_name, // Show username at top-right
+          user_name: user.user_name, 
           company: user.company,
           entity_code: user.entity_code,
-          menuPermissions, // Handle menu visibility in frontend
-          country, // Send country to frontend
+          menuPermissions, 
+          country, 
         },
       },
     });
@@ -184,74 +184,6 @@ exports.handleSignup = catchAsync(async (req, res, next) => {
   res.status(201).json({
     status: "success",
     message: "Signup request submitted successfully",
-  });
-});
-
-// Add this temporary test route controller
-exports.createTestUser = catchAsync(async (req, res, next) => {
-  const hashedPassword = await bcrypt.hash("Test@123", 12);
-
-  const currentDate = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
-
-  const testUser = {
-    company: "JGLS", // Max 10 chars
-    entity_code: "JGL", // Max 10 chars
-    user_id: "petersafwat", // Max 20 chars
-    user_pwd: "password1234", // Max 100 chars
-    user_name: "peter safwat", // Max 50 chars
-    user_company: "JGLS", // Max 50 chars
-    user_location: "SG", // Max 20 chars
-    user_avatar: null,
-    user_active: "Y", // Single char
-    user_valid_date: new Date(Date.now() + 24 *10 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0], // Date format
-    user_email: "petersafwat@jgls.com", // Max 50 chars
-    create_user: "SYSTEM", // Max 20 chars
-    create_date: currentDate, // Date format
-    update_user: "SYSTEM", // Max 20 chars
-    update_date: currentDate, // Date format
-  };
-
-  await knex("dba.xtrack_access").insert(testUser);
-
-  res.status(201).json({
-    status: "success",
-    message: "Test user created successfully",
-    data: {
-      user_id: testUser.user_id,
-      password: "Test@123", // Only for testing!
-    },
-  });
-});
-exports.updateUserValidDate = catchAsync(async (req, res, next) => {
-  const userId = "petersafwat";
-  const newValidDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // A week from now
-    .toISOString()
-    .split("T")[0];
-
-  const updatedRows = await knex("dba.xtrack_access")
-    .where({ user_id: userId })
-    .update({
-      user_valid_date: newValidDate,
-      update_user: "SYSTEM",
-      update_date: new Date().toISOString().split("T")[0],
-    });
-
-  if (updatedRows === 0) {
-    return res.status(404).json({
-      status: "fail",
-      message: "User not found",
-    });
-  }
-
-  res.status(200).json({
-    status: "success",
-    message: "User valid date updated successfully",
-    data: {
-      user_id: userId,
-      user_valid_date: newValidDate,
-    },
   });
 });
 
