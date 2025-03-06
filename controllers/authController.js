@@ -54,7 +54,7 @@ exports.login = catchAsync(async (req, res, next) => {
     }
 
     // 2. Check if password matches
-    const passwordMatch = user_pwd === user.user_pwd; 
+    const passwordMatch = user_pwd === user.user_pwd;
     if (!passwordMatch) {
       throw new AppError("Invalid User/Password", 401);
     }
@@ -85,8 +85,8 @@ exports.login = catchAsync(async (req, res, next) => {
       api_request: "login",
       api_status: "S",
       ip_config,
-      ip_location:country ,
-       // Save country in logs
+      ip_location: country,
+      // Save country in logs
     });
 
     // 7. Generate JWT token
@@ -105,27 +105,26 @@ exports.login = catchAsync(async (req, res, next) => {
       data: {
         user: {
           user_id: user.user_id,
-          user_name: user.user_name, 
+          user_name: user.user_name,
           company: user.company,
           entity_code: user.entity_code,
-          menuPermissions, 
-          country, 
+          menuPermissions,
+          country,
         },
       },
     });
-
   } catch (error) {
     next(error);
   }
 });
 exports.logout = (req, res) => {
   // Clear JWT cookie
-  res.cookie('jwt', 'loggedout', {
+  res.cookie("jwt", "loggedout", {
     expires: new Date(Date.now() + 10 * 1000),
-    httpOnly: true
+    httpOnly: true,
   });
 
-  res.status(200).json({ status: 'success' });
+  res.status(200).json({ status: "success" });
 };
 
 exports.handleSignup = catchAsync(async (req, res, next) => {

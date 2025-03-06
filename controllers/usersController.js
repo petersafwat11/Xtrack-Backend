@@ -16,7 +16,7 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
     const result = await knex.transaction(async (trx) => {
       // Get total count for pagination
       const countQuery = trx("dba.XTRACK_users")
-        .count('* as count')
+        .count("* as count")
         .timeout(5000);
 
       // Apply search filter if provided
@@ -61,25 +61,26 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
       results: parseInt(result.count),
       page,
       limit,
-      data: result.users
+      data: result.users,
     });
-
   } catch (error) {
-    console.error('Error in getAllUsers:', error);
-    next(new AppError(error.message || 'Failed to fetch users', 500));
+    console.error("Error in getAllUsers:", error);
+    next(new AppError(error.message || "Failed to fetch users", 500));
   }
 });
 
 exports.createUser = catchAsync(async (req, res, next) => {
   try {
     const userData = { ...req.body };
-    
+
     // Insert the user into the database
-    const created = await knex("dba.XTRACK_users").insert(userData).returning("*");
-    
+    const created = await knex("dba.XTRACK_users")
+      .insert(userData)
+      .returning("*");
+
     // Send welcome email to the user
     const nodemailer = require("nodemailer");
-    
+
     // Create email transporter using environment variables
     const transporter = nodemailer.createTransport({
       host: process.env.smtp_server,
@@ -93,7 +94,7 @@ exports.createUser = catchAsync(async (req, res, next) => {
         rejectUnauthorized: false,
       },
     });
-    
+
     // Format email body
     const emailBody = `
       Hi ${userData.user_name},
@@ -107,7 +108,7 @@ exports.createUser = catchAsync(async (req, res, next) => {
       
       Kindly reach to us for any queries contact@trackww.com
     `;
-    
+
     // Send email
     await transporter.sendMail({
       from: '"TrackWW Support" <contact@trackww.com>',
@@ -116,14 +117,14 @@ exports.createUser = catchAsync(async (req, res, next) => {
       text: emailBody,
       html: emailBody.replace(/\n/g, "<br>"),
     });
-    
+
     // Return success response
     res.status(201).json({
       status: "success",
       data: {
         data: created[0],
       },
-      message: "User created successfully and welcome email sent"
+      message: "User created successfully and welcome email sent",
     });
   } catch (error) {
     console.error("Error creating user:", error);
@@ -133,7 +134,7 @@ exports.createUser = catchAsync(async (req, res, next) => {
 
 exports.getUser = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  
+
   const user = await knex("dba.XTRACK_users").where({ user_id: id }).first();
 
   if (!user) {
@@ -151,10 +152,10 @@ exports.getUser = catchAsync(async (req, res, next) => {
 exports.updateUser = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const updateData = { ...req.body };
-  
+
   // Don't update user_id
   delete updateData.user_id;
-  
+
   // If password is empty, don't update it
   if (!updateData.user_pwd) {
     delete updateData.user_pwd;
@@ -182,14 +183,14 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
   // Check if the user exists
   const user = await knex("dba.XTRACK_users").where({ user_id: id }).first();
   if (!user) {
-      return next(new AppError("User not found", 404));
+    return next(new AppError("User not found", 404));
   }
 
   // Delete the user
   await knex("dba.XTRACK_users").where({ user_id: id }).del();
 
   res.status(204).json({
-      status: "success",
-      data: null, // No content on successful deletion
+    status: "success",
+    data: null, // No content on successful deletion
   });
 });

@@ -10,7 +10,6 @@ router.post("/signup-request", authController.handleSignup);
 router.post("/login", authController.login);
 router.post("/change-password", authController.changePassword);
 
-
 router
   .route("/")
   .get(usersController.getAllUsers)
@@ -19,7 +18,6 @@ router
   .route("/:id")
   .get(usersController.getUser)
   .patch(usersController.updateUser)
-  .delete(usersController.deleteUser)
-  ;
+  .delete(usersController.deleteUser);
 
 module.exports = router;

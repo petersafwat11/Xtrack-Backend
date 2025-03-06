@@ -47,13 +47,11 @@ const limiter = rateLimit({
   max: 100, // Limit each IP to 100 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
-  // Add trusted proxy configuration
   trustProxy: true,
 });
 
 app.use(limiter);
 
-// Add this before your routes
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "success",
