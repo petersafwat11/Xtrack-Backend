@@ -1,6 +1,5 @@
 const express = require("express");
 const trackingController = require("../controllers/trackingController");
-// const { protect } = require("../controllers/authController");
 
 const router = express.Router();
 
@@ -13,8 +12,6 @@ router.get("/export", trackingController.exportLogsToExcel);
 
 // Dashboard routes
 router.get("/totals", trackingController.getTotals);
-// router.get("/charts", trackingController.getChartData);
-// router.get("/recent", trackingController.getRecentTracks);
 router.get("/dashboard", trackingController.getDashboardData);
 router.get("/:trackingNumber", trackingController.getTrackingData);
 

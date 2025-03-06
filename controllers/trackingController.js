@@ -32,7 +32,7 @@ exports.logTracking = catchAsync(async (req, res, next) => {
                 api_status: req.body.api_status || 'S',
                 api_error: req.body.api_error || null,
                 ip_config,
-                ip_location: country // Store country instead of raw IP
+                ip_location: country 
             })
             .returning("log_id");
 
@@ -232,7 +232,6 @@ exports.exportLogsToExcel = catchAsync(async (req, res, next) => {
 });
 
 // External API URL
-// Controller to fetch AQZA tracking data
 exports.getTrackingData = async (req, res) => {
 
     const { externalApiUrl } = req.query;
@@ -254,14 +253,6 @@ exports.getTrackingData = async (req, res) => {
         }
         return res.status(200).json({ data: externalApiResponse?.data });
     } catch (error) {
-        // console.error('Error fetching tracking data:', error.response?.data);
-        if(error.response?.data?.response_status === 'success'){
-            console.log('error.response?.data?.response_status', error.response?.data?.response_status)
-
-            return res.status(error.response?.status || 200).json({
-                data: error.response?.data,
-            });
-        }
         // Handle specific error scenarios (e.g., network issues, bad requests)
         if (axios.isAxiosError(error)) {
             return res.status(error.response?.status || 500).json({
@@ -314,8 +305,7 @@ exports.getTotals = catchAsync(async (req, res, next) => {
     }
 });
 
-// controllers/dashboardController.js
-
+// controllers/dashboardController
 exports.getDashboardData = async (req, res) => {
   try {
     const { user_id, year } = req.query;
@@ -344,7 +334,6 @@ exports.getDashboardData = async (req, res) => {
       .first();
 
     // 3. Total records for the last 7 days grouped by day
-    // Here we assume "last 7 days" relative to now (adjust if needed).
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(now.getDate() - 6);
     // We group by the day (date only) and count the records.
@@ -406,8 +395,6 @@ exports.getDashboardData = async (req, res) => {
     const currentYearTotal = parseInt(currentYearResult.count, 10);
 
     // For the last 7 days, build an array of day objects (using the day abbreviation as name)
-    // Note: Since grouping by day abbreviation can sometimes mix days from different weeks,
-    // you might need a more robust solution if exact dates are required.
     const last7Days = [];
     // Create a map from the query results
     const dayCounts = {};
@@ -438,9 +425,9 @@ exports.getDashboardData = async (req, res) => {
       currentMonthTotal,
       currentYearTotal,
       last7Days,
-      dataGrid, // array of last 20 records
+      dataGrid, 
       successRatio,
-      trackRatio, // object with Ocean, Vessel, Spot, Air, Schedule counts
+      trackRatio, 
     };
 
     return res.json(dashboardData);

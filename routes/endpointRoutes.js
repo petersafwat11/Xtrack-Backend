@@ -8,9 +8,7 @@ router
     .get(endpointController.getAllEndpoints)
     .post(endpointController.createEndpoint);
 
-// router.patch('/update', endpointController.updateEndpoint);
 
 router.route('/:id').get(endpointController.getEndpoint).patch(endpointController.updateEndpoint)
-// .delete(endpointController.deleteEndpoint)
 ;
 module.exports = router;
