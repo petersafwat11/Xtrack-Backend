@@ -1,9 +1,7 @@
 const bcrypt = require("bcryptjs");
-const User = require("../models/userModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const jwt = require("jsonwebtoken");
-const { countryList } = require("../utils/countryList");
 const knex = require("../config/db");
 const nodemailer = require("nodemailer");
 
@@ -41,13 +39,14 @@ exports.login = catchAsync(async (req, res, next) => {
   const { user_id, user_pwd } = req.body;
   const currentDate = new Date();
 
-  // Get client IP
-  const ip_config = req.ip || req.connection.remoteAddress;
-  const ip_location = req.headers["x-forwarded-for"] || ip_config;
-
   try {
-    // 1. Fetch user from xtrack_users table
-    const user = await knex("dba.XTRACK_users").where({ user_id }).first();
+    // 1. Fetch user from database, checking both user_id and user_email fields
+    const user = await knex("dba.xwms_users")
+      .where(function() {
+        this.where({ user_id })
+            .orWhere({ user_email: user_id }); // Check if user_id input matches user_email field
+      })
+      .first();
 
     if (!user) {
       throw new AppError("Invalid User/Password", 401);
@@ -69,48 +68,18 @@ exports.login = catchAsync(async (req, res, next) => {
       throw new AppError("User Login Expired", 401);
     }
 
-    // 5. Get Country from IP
-    let country = "Unknown";
-    try {
-      const response = await axios.get(`http://ip-api.com/json/${ip_location}`);
-      country = response.data.country || "Unknown";
-    } catch (err) {
-      console.error("Failed to fetch IP location:", err.message);
-    }
-
-    // 6. Log successful login
-    await knex("dba.xtrack_log").insert({
-      user_id,
-      api_date: new Date(),
-      api_request: "login",
-      api_status: "S",
-      ip_config,
-      ip_location: country,
-      // Save country in logs
-    });
-
-    // 7. Generate JWT token
+    // 5. Generate JWT token
     const token = signToken(user.user_id);
 
-    // 8. Determine menu visibility
-    const menuPermissions = {
-      showSettingsUsers: user.admin_user === "Y",
-      showSettingsAPI: user.admin_user === "Y",
-    };
+    // 6. Delete password from user object
+    delete user.user_pwd;
 
-    // 9. Send response
+    // 7. Send response
     res.status(200).json({
       status: "success",
       token,
       data: {
-        user: {
-          user_id: user.user_id,
-          user_name: user.user_name,
-          company: user.company,
-          entity_code: user.entity_code,
-          menuPermissions,
-          country,
-        },
+        user,
       },
     });
   } catch (error) {
@@ -226,3 +195,60 @@ exports.changePassword = catchAsync(async (req, res, next) => {
     message: "Password updated successfully",
   });
 });
+
+exports.createTestingUser = async (req, res, next) => {
+  try {
+    // const { user_pwd, ...userData } = req.body; // Extract password separately
+
+    // Log the data being inserted for debugging
+
+    // 1. Hash Password
+    // const hashedPassword = await bcrypt.hash(user_pwd, 10);
+
+    // 2. Insert into xwms_user table and RETURN inserted data (excluding password)
+    const [newUser] = await knex("dba.xwms_users")
+      .insert({
+        ...req.body,
+      })
+      .returning([
+        "company",
+        "entity_code",
+        "user_id",
+        "user_name",
+        "user_email",
+        "user_active",
+        "valid_till",
+        "user_company",
+        "user_address",
+        "user_country",
+        "user_phone",
+        "admin_user",
+      ]); // 
+
+    // 3. Send Response
+    res.status(201).json({
+      status: "success",
+      message: "Testing user created successfully",
+      data: newUser, // 
+    });
+
+  } catch (error) {
+    console.error("Error creating testing user:", error.message);
+    
+    // Check if it's a column length error
+    if (error.message.includes("value too long for type")) {
+      // Extract the column name from the error message if possible
+      const columnMatch = error.message.match(/column\s+"([^"]+)"/);
+      const column = columnMatch ? columnMatch[1] : "unknown column";
+      
+      return res.status(400).json({
+        status: "error",
+        code: 400,
+        message: `Value for ${column} is too long. Please check your input data and try again.`,
+        originalError: error.message
+      });
+    }
+    
+    next(error);
+  }
+};

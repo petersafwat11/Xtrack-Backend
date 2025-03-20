@@ -38,46 +38,108 @@ knex.on('error', function(err) {
 });
 
 // Function to list all tables in the database
-// const listTables = async () => {
-//   try {
-//     const tables = await knex
-//       .select("table_name")
-//       .from("information_schema.tables")
-//       .where("table_schema", "dba");
+const allowedTables = [
+  // "xwms_users",
+  // "wms_app_sorting", "wms_app_receive", "wms_app_putaway", "wms_app_transfer",
+  // "wms_app_pick", "wms_app_pack", "wms_app_stock_take", "warehouse_master",
+  // "wms_location", "wms_commodity", "partner", "xwms_signup",
+  // "xwms_feedback", "xwms_log", "xwms_organization", "inventory_header",
+   "inventory_detail"
+];
 
-//     console.log("\nDatabase Tables:");
-//     console.log("----------------");
-//     tables.forEach((table) => {
-//       console.log(`- ${table.table_name}`);
-//     });
+const listTables = async () => {
+  try {
+    // List only allowed tables from schema "dba"
+    const tables = await knex
+      .select("table_name")
+      .from("information_schema.tables")
+      .where("table_schema", "dba")
+      .whereIn("table_name", allowedTables); // ✅ Filter only the required tables
 
-//     // Optional: Get detailed information about each table
-//     for (const table of tables) {
-//       const columns = await knex
-//         .select("column_name", "data_type", "is_nullable")
-//         .from("information_schema.columns")
-//         .where({
-//           table_schema: "dba",
-//           table_name: table.table_name,
-//         });
+    console.log("\nDatabase Tables:");
+    console.log("----------------");
+    tables.forEach((table) => {
+      console.log(`- ${table.table_name}`);
+    });
 
-//       console.log(`\nTable: ${table.table_name}`);
-//       console.log("Columns:");
-//       columns.forEach((column) => {
-//         console.log(
-//           `  - ${column.column_name} (${column.data_type}) ${column.is_nullable === "YES" ? "NULL" : "NOT NULL"}`
-//         );
-//       });
-//     }
-//   } catch (error) {
-//     console.error("Error listing tables:", error);
-//   }
-// };
+    // Fetch column details only for allowed tables
+    for (const table of tables) {
+      const columns = await knex
+        .select("column_name", "data_type", "is_nullable", "character_maximum_length")
+        .from("information_schema.columns")
+        .where({
+          table_schema: "dba",
+          table_name: table.table_name,
+        });
+
+      console.log(`\nTable: ${table.table_name}`);
+      console.log("Columns:");
+      columns.forEach((column) => {
+        console.log(
+          `  - ${column.column_name} (${column.data_type}${column.character_maximum_length ? `, max length: ${column.character_maximum_length}` : ""}) ${column.is_nullable === "YES" ? "NULL" : "NOT NULL"}`
+        );
+      });
+    }
+  } catch (error) {
+    console.error("Error listing tables:", error);
+  }
+};
+
+const listTablesWithPrimaryKeys = async () => {
+  try {
+    // Get table names from schema "dba" that are in allowedTables
+    const tables = await knex
+      .select("table_name")
+      .from("information_schema.tables")
+      .where("table_schema", "dba")
+      .whereIn("table_name", allowedTables);
+
+    console.log("Tables fetched:", tables.map(t => t.table_name));
+
+    // Fetch primary keys for each table
+    const primaryKeys = await knex.raw(`
+      SELECT 
+        c.table_name, 
+        a.attname AS primary_key
+      FROM 
+        information_schema.tables c
+      JOIN 
+        pg_index i ON c.table_name::regclass = i.indrelid
+      JOIN 
+        pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+      WHERE 
+        c.table_schema = 'dba' 
+        AND c.table_name IN (${allowedTables.map(t => `'${t}'`).join(", ")})
+        AND i.indisprimary
+    `);
+
+    // Group primary keys by table
+    const tablePrimaryKeys = primaryKeys.rows.reduce((acc, row) => {
+      if (!acc[row.table_name]) {
+        acc[row.table_name] = [];
+      }
+      acc[row.table_name].push(row.primary_key);
+      return acc;
+    }, {});
+
+    console.log("\nTables with Primary Keys:");
+    console.log("----------------------");
+    Object.entries(tablePrimaryKeys).forEach(([table, keys]) => {
+      console.log(`- ${table} (Primary Keys: ${keys.join(", ")})`);
+    });
+
+    return tablePrimaryKeys;
+  } catch (error) {
+    console.error("Error fetching tables and primary keys:", error);
+    return {};
+  }
+};
 
 knex
   .raw("SELECT 1")
   .then(async () => {
     console.log("Connected to the database successfully");
+    // await listTablesWithPrimaryKeys();
     // await listTables();
   })
   .catch((err) => {

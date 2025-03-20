@@ -7,7 +7,7 @@ exports.getAll = (tableName) =>
   catchAsync(async (req, res, next) => {
     const features = new APIFeatures(knex(tableName), req.query)
       .filter()
-      .sort()
+      // .sort()
       .limitFields()
       .paginate();
 
@@ -23,9 +23,9 @@ exports.getAll = (tableName) =>
     });
   });
 
-exports.deleteOne = (tableName) =>
+exports.deleteOne = (tableName, rowKey) =>
   catchAsync(async (req, res, next) => {
-    const deleted = await knex(tableName).where({ id: req.params.id }).del();
+    const deleted = await knex(tableName).where({ [rowKey]: req.params.id }).del();
 
     if (!deleted) {
       return next(new AppError("No document found with that ID", 404));
@@ -53,10 +53,10 @@ exports.deleteMany = (tableName) =>
     });
   });
 
-exports.updateOne = (tableName) =>
+exports.updateOne = (tableName, rowKey) =>
   catchAsync(async (req, res, next) => {
     const updated = await knex(tableName)
-      .where({ id: req.params.id })
+      .where({ [rowKey]: req.params.id })
       .update(req.body)
       .returning("*");
 
@@ -84,9 +84,9 @@ exports.createOne = (tableName) =>
     });
   });
 
-exports.getOne = (tableName) =>
+exports.getOne = (tableName, rowKey) =>
   catchAsync(async (req, res, next) => {
-    const doc = await knex(tableName).where({ id: req.params.id }).first();
+    const doc = await knex(tableName).where({ [rowKey]: req.params.id }).first();
 
     if (!doc) {
       return next(new AppError("No document found with that ID", 404));
@@ -94,8 +94,21 @@ exports.getOne = (tableName) =>
 
     res.status(200).json({
       status: "success",
-      data: {
-        data: doc,
-      },
+      data: doc,
     });
   });
+// exports.getFiltersData=async (req, res, next) => {
+//   try{
+//     const doc = await knex(tableName).where({ [rowKey]: req.params.id }).first();
+//     if (!doc) {
+//       return next(new AppError("No document found with that ID", 404));
+//     }
+//     res.status(200).json({
+//       status: "success",
+//       data: doc,
+//     });
+//   }
+//   catch(error){
+//     next(error);
+//   }
+// }
