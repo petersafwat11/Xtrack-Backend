@@ -10,10 +10,7 @@ const endpointRoutes = require("./routes/endpointRoutes");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 dotenv.config();
-// restore the state of the backend 
-// making update to github to update reailway
 const app = express();
-
 // Trust proxy - Add this before other middleware
 app.set("trust proxy", 1);
 
@@ -85,8 +82,25 @@ app.use((err, req, res, next) => {
 // Error handling middleware
 app.use(errorController);
 
-// Start the server
+// Replace only the server startup section at the bottom of the file
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+
+// Better server shutdown handling
+process.on("SIGINT", () => {
+  console.log("Shutting down gracefully");
+  server.close(() => {
+    process.exit(0);
+  });
+});
+
+// Ensure server cleanup on nodemon restart
+process.once("SIGUSR2", () => {
+  server.close(() => {
+    process.kill(process.pid, "SIGUSR2");
+  });
+});
+
+// Create the server
+const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

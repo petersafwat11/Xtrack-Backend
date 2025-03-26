@@ -239,6 +239,8 @@ exports.exportLogsToExcel = catchAsync(async (req, res, next) => {
 // External API URL
 exports.getTrackingData = async (req, res) => {
   const { externalApiUrl } = req.query;
+  console.log("externalApiUrl");
+  console.log(externalApiUrl);
   // Validate externalApiUrl
   if (!externalApiUrl || typeof externalApiUrl !== "string") {
     return res

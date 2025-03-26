@@ -226,3 +226,25 @@ exports.changePassword = catchAsync(async (req, res, next) => {
     message: "Password updated successfully",
   });
 });
+exports.extendValidity = catchAsync(async (req, res, next) => {
+  const { user_id } = req.body;
+  const user = await knex("dba.XTRACK_users").where({ user_id }).first();
+  console.log(user);
+
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  // 3. Update user's validity date
+  await knex("dba.XTRACK_users")
+    .where({ user_id })
+    .update({
+      admin_user: "Y",
+    });
+
+  res.status(200).json({
+    status: "success",
+    message: "Validity extended successfully",
+  });
+});
