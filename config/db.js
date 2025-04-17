@@ -37,43 +37,6 @@ knex.on('error', function(err) {
   console.error('Database error:', err);
 });
 
-// Function to list all tables in the database
-// const listTables = async () => {
-//   try {
-//     const tables = await knex
-//       .select("table_name")
-//       .from("information_schema.tables")
-//       .where("table_schema", "dba");
-
-//     console.log("\nDatabase Tables:");
-//     console.log("----------------");
-//     tables.forEach((table) => {
-//       console.log(`- ${table.table_name}`);
-//     });
-
-//     // Optional: Get detailed information about each table
-//     for (const table of tables) {
-//       const columns = await knex
-//         .select("column_name", "data_type", "is_nullable")
-//         .from("information_schema.columns")
-//         .where({
-//           table_schema: "dba",
-//           table_name: table.table_name,
-//         });
-
-//       console.log(`\nTable: ${table.table_name}`);
-//       console.log("Columns:");
-//       columns.forEach((column) => {
-//         console.log(
-//           `  - ${column.column_name} (${column.data_type}) ${column.is_nullable === "YES" ? "NULL" : "NOT NULL"}`
-//         );
-//       });
-//     }
-//   } catch (error) {
-//     console.error("Error listing tables:", error);
-//   }
-// };
-
 knex
   .raw("SELECT 1")
   .then(async () => {

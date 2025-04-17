@@ -11,7 +11,6 @@ router.get("/", trackingController.getLogRecords);
 router.get("/export", trackingController.exportLogsToExcel);
 
 // Dashboard routes
-router.get("/totals", trackingController.getTotals);
 router.get("/dashboard", trackingController.getDashboardData);
 router.get("/:trackingNumber", trackingController.getTrackingData);
 

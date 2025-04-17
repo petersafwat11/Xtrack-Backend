@@ -11,5 +11,7 @@ router
 router
   .route("/:id")
   .get(endpointController.getEndpoint)
-  .patch(endpointController.updateEndpoint);
+  .patch(endpointController.updateEndpoint)
+  .delete(endpointController.deleteEndpoint);
+
 module.exports = router;
