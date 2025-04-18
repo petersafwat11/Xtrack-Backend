@@ -34,9 +34,9 @@ exports.logTracking = catchAsync(async (req, res, next) => {
     if (ip_config && ip_config !== "127.0.0.1") {
       // Skip local IPs
       try {
-        const geo = geoip.lookup(ip_config);
-        if (geo && geo.country) {
-          country = geo.country; // ISO country code (e.g., "US", "MY", "EG")
+      const geo = geoip.lookup(ip_config);
+      if (geo && geo.country) {
+        country = geo.country; // ISO country code (e.g., "US", "MY", "EG")
         }
       } catch (geoError) {
         console.error("IP geolocation failed:", geoError);
@@ -46,14 +46,14 @@ exports.logTracking = catchAsync(async (req, res, next) => {
 
     // Create log data object
     const logData = {
-      user_id,
-      api_date: new Date(),
-      api_request,
-      menu_id,
-      api_status: req.body.api_status || "S",
-      api_error: req.body.api_error || null,
-      ip_config,
-      ip_location: country,
+        user_id,
+        api_date: new Date(),
+        api_request,
+        menu_id,
+        api_status: req.body.api_status || "S",
+        api_error: req.body.api_error || null,
+        ip_config,
+        ip_location: country,
     };
 
     // Use Tracking model to log the event
@@ -226,49 +226,49 @@ exports.exportLogsToExcel = catchAsync(async (req, res, next) => {
 
     // Create Excel workbook and worksheet
     try {
-      const workbook = new excel.Workbook();
-      const worksheet = workbook.addWorksheet("Logs");
+    const workbook = new excel.Workbook();
+    const worksheet = workbook.addWorksheet("Logs");
 
-      // Define columns
-      worksheet.columns = [
-        { header: "Log ID", key: "log_id", width: 10 },
-        { header: "User ID", key: "user_id", width: 15 },
-        { header: "Date", key: "api_date", width: 20 },
-        { header: "Menu", key: "menu_id", width: 15 },
-        { header: "Request", key: "api_request", width: 20 },
-        { header: "Status", key: "api_status", width: 10 },
-        { header: "Error Description", key: "api_error", width: 30 },
-        { header: "IP Config", key: "ip_config", width: 15 },
-        { header: "Location", key: "ip_location", width: 15 },
-      ];
+    // Define columns
+    worksheet.columns = [
+      { header: "Log ID", key: "log_id", width: 10 },
+      { header: "User ID", key: "user_id", width: 15 },
+      { header: "Date", key: "api_date", width: 20 },
+      { header: "Menu", key: "menu_id", width: 15 },
+      { header: "Request", key: "api_request", width: 20 },
+      { header: "Status", key: "api_status", width: 10 },
+      { header: "Error Description", key: "api_error", width: 30 },
+      { header: "IP Config", key: "ip_config", width: 15 },
+      { header: "Location", key: "ip_location", width: 15 },
+    ];
 
-      // Format header row
-      worksheet.getRow(1).font = { bold: true };
+    // Format header row
+    worksheet.getRow(1).font = { bold: true };
 
-      // Add data rows
-      logs.forEach((log) => {
-        // Format status for readability
-        const formattedLog = {
-          ...log,
-          api_status: log.api_status === "S" ? "Success" : "Failed",
-          api_date: new Date(log.api_date).toLocaleString(),
-        };
-        worksheet.addRow(formattedLog);
-      });
+    // Add data rows
+    logs.forEach((log) => {
+      // Format status for readability
+      const formattedLog = {
+        ...log,
+        api_status: log.api_status === "S" ? "Success" : "Failed",
+        api_date: new Date(log.api_date).toLocaleString(),
+      };
+      worksheet.addRow(formattedLog);
+    });
 
-      // Set response headers
-      res.setHeader(
-        "Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      );
-      res.setHeader(
-        "Content-Disposition",
-        "attachment; filename=logs_export.xlsx"
-      );
+    // Set response headers
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=logs_export.xlsx"
+    );
 
-      // Write to response
-      await workbook.xlsx.write(res);
-      res.end();
+    // Write to response
+    await workbook.xlsx.write(res);
+    res.end();
     } catch (excelError) {
       console.error("Excel generation error:", excelError);
       return next(new AppError("Failed to generate Excel file", 500));
@@ -334,7 +334,7 @@ exports.getTrackingData = catchAsync(async (req, res, next) => {
       data: externalApiResponse.data,
     });
   } catch (error) {
-    console.error("External API Error:", error);
+    // console.error("External API Error:", error);
 
     // Handle specific error scenarios with more detailed messages
     if (axios.isAxiosError(error)) {
@@ -345,7 +345,18 @@ exports.getTrackingData = catchAsync(async (req, res, next) => {
       if (error.code === "ENOTFOUND") {
         return next(new AppError("External API host not found", 404));
       }
+      if (
+        error.response?.data?.response_data &&
+        error.response?.data?.response_data?.length > 0
+      ) {
+        console.log("data sent", error.response?.data?.response_data);
 
+        return res.status(200).json({
+          status: "success",
+          data: error.response?.data,
+        });
+
+      }
       if (error.response) {
         // The request was made and the server responded with a non-2xx status
         return next(
