@@ -9,29 +9,41 @@ const trackingRoutes = require("./routes/trackingRoutes");
 const endpointRoutes = require("./routes/endpointRoutes");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
+
 dotenv.config();
 const app = express();
-// Trust proxy - Add this before other middleware
+
+// Trust proxy for platforms like Vercel/Render
 app.set("trust proxy", 1);
 
-// Enable pre-flight requests for all routes
+// CORS configuration (place early)
+const allowedOrigins = ["http://localhost:3000", "https://trackww.vercel.app"];
 
-// CORS configuration
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://trackww.vercel.app"],
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
     optionsSuccessStatus: 200,
   })
 );
+
+// Handle all preflight OPTIONS requests
 app.options("*", cors());
 
-// Middleware to parse JSON requests
+// Fallback for OPTIONS method to avoid CORS errors
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// Parse JSON requests
 app.use(express.json());
 
-// Security middleware with adjusted settings
+// Security headers
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -39,17 +51,17 @@ app.use(
   })
 );
 
-// Rate limiter configuration
+// Rate limiter
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   trustProxy: true,
 });
-
 app.use(limiter);
 
+// Health check route
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "success",
@@ -59,48 +71,42 @@ app.get("/", (req, res) => {
   });
 });
 
+// API routes
 app.use("/api/users", userRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/tracking", trackingRoutes);
 app.use("/api/endpoints", endpointRoutes);
 
+// Catch unhandled routes
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
+// Global error handler
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Something went wrong!";
-
   res.status(statusCode).json({
     status: err?.status || "error",
-    code: err?.statusCode || 500,
+    code: statusCode,
     message,
   });
 });
 
-// Error handling middleware
+// Custom error controller
 app.use(errorController);
 
-// Replace only the server startup section at the bottom of the file
+// Server startup
 const PORT = process.env.PORT || 5000;
-
-// Better server shutdown handling
-process.on("SIGINT", () => {
-  console.log("Shutting down gracefully");
-  server.close(() => {
-    process.exit(0);
-  });
-});
-
-// Ensure server cleanup on nodemon restart
-process.once("SIGUSR2", () => {
-  server.close(() => {
-    process.kill(process.pid, "SIGUSR2");
-  });
-});
-
-// Create the server
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+});
+
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log("Shutting down gracefully");
+  server.close(() => process.exit(0));
+});
+process.once("SIGUSR2", () => {
+  server.close(() => process.kill(process.pid, "SIGUSR2"));
 });
