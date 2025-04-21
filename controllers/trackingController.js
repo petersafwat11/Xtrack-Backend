@@ -310,7 +310,7 @@ exports.getTrackingData = catchAsync(async (req, res, next) => {
   try {
     // Make an API request to the external service
     const externalApiResponse = await axios.get(externalApiUrl, {
-      timeout: 10000,
+      timeout: 100000,
     });
 
     // Check if the response status is not 200
