@@ -17,7 +17,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 // CORS configuration (place early)
-const allowedOrigins = ["http://localhost:3000", "https://trackww.vercel.app"];
+const allowedOrigins = ["http://localhost:3000", "https://trackww.vercel.app", "https://jgltrack-frontend.vercel.app"];
 
 app.use(
   cors({
